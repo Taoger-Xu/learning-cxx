@@ -1,4 +1,5 @@
 ﻿#include "../exercise.h"
+#include <cstring>
 
 // READ: 类模板 <https://zh.cppreference.com/w/cpp/language/class_template>
 
@@ -10,6 +11,10 @@ struct Tensor4D {
     Tensor4D(unsigned int const shape_[4], T const *data_) {
         unsigned int size = 1;
         // TODO: 填入正确的 shape 并计算 size
+        for(int i = 0; i < 4; i++){
+            size *= shape_[i];
+            shape[i] = shape_[i];
+        }
         data = new T[size];
         std::memcpy(data, data_, size * sizeof(T));
     }
@@ -28,6 +33,46 @@ struct Tensor4D {
     // 则 `this` 与 `others` 相加时，3 个形状为 `[1, 2, 1, 4]` 的子张量各自与 `others` 对应项相加。
     Tensor4D &operator+=(Tensor4D const &others) {
         // TODO: 实现单向广播的加法
+        // `others` 可以具有与 `this` 不同的形状，形状不同的维度长度必须为 1。
+        for(int i = 0; i < 4; i++) {
+            if((shape[i] != others.shape[i]) && (others.shape[i] != 1)) {
+                throw std::invalid_argument("Shapes are not compatible for broadcasting");
+            }
+        }
+        // 计算每个维度的步长，索引越大维度越低
+        unsigned int thisStrides[4];
+        unsigned int otherStrides[4];
+        unsigned int thisSize = 1;
+        unsigned int otherSize = 1;
+
+        for(int i = 3; i >=0; i--) {
+            thisStrides[i] = thisSize;
+            otherStrides[i] = otherSize;
+            thisSize *= shape[i];
+            otherSize *= others.shape[i];
+        }
+
+        // 单向传播，重复计算
+        for(unsigned int i = 0; i < shape[0]; i++) {
+            unsigned int io = others.shape[0] == 1 ? 0 : i; 
+
+            for(unsigned int j = 0; j < shape[1]; j++) {
+                unsigned int jo = others.shape[1] == 1 ? 0 : j; 
+
+                for(unsigned int k = 0; k < shape[2]; k++) {
+                    unsigned int ko = others.shape[2] == 1 ? 0 : k;
+
+                    for(unsigned int m = 0; m < shape[3]; m++) {
+                        unsigned int mo = others.shape[3] == 1 ? 0 : m;
+
+                        unsigned int idx = i * thisStrides[0] + j * thisStrides[1] + k * thisStrides[2] + m * thisStrides[3];
+                        unsigned int other_idx = io * otherStrides[0] + jo * otherStrides[1] + ko * otherStrides[2] + mo * otherStrides[3];
+                        data[idx] += others.data[other_idx];
+                    }
+                }
+            }
+        }
+
         return *this;
     }
 };
@@ -102,8 +147,11 @@ int main(int argc, char **argv) {
         auto t0 = Tensor4D(s0, d0);
         auto t1 = Tensor4D(s1, d1);
         t0 += t1;
-        for (auto i = 0u; i < sizeof(d0) / sizeof(int); ++i) {
+        for (auto i = 0u; i < sizeof(d0) / sizeof(double); ++i) {
             ASSERT(t0.data[i] == d0[i] + 1, "Every element of t0 should be incremented by 1 after adding t1 to it.");
+            // if(t0.data[i] != d0[i]) {
+            //     std::cout << "the line is " << i << " t0.data=" << t0.data[i] << " d0.data" << d0[i] << std::endl;
+            // }
         }
     }
 }

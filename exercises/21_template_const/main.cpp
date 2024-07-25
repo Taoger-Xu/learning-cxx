@@ -1,4 +1,5 @@
 ﻿#include "../exercise.h"
+#include <cstring>
 
 // READ: 模板非类型实参 <https://zh.cppreference.com/w/cpp/language/template_parameters#%E6%A8%A1%E6%9D%BF%E9%9D%9E%E7%B1%BB%E5%9E%8B%E5%AE%9E%E5%8F%82>
 
@@ -10,9 +11,23 @@ struct Tensor {
     Tensor(unsigned int const shape_[N]) {
         unsigned int size = 1;
         // TODO: 填入正确的 shape 并计算 size
+        // for(int i = 0; i < N; i++){
+        //     size *= shape_[i];
+        //     shape[i] = shape_[i];
+        // }
         data = new T[size];
         std::memset(data, 0, size * sizeof(T));
     }
+
+    //  Tensor(unsigned int const shape_[N]) {
+    //     unsigned int size = 1;
+	// 			std::memcpy(shape, shape_, N*sizeof(unsigned int));
+	// 			for(int i=0;i<N;i++) size *= shape[i];
+    //     // TODO: 填入正确的 shape 并计算 size
+    //     data = new T[size];
+    //     std::memset(data, 0, size * sizeof(T));
+    // }
+
     ~Tensor() {
         delete[] data;
     }
@@ -29,13 +44,36 @@ struct Tensor {
     }
 
 private:
+    // 给定坐标计算index
     unsigned int data_index(unsigned int const indices[N]) const {
         unsigned int index = 0;
-        for (unsigned int i = 0; i < N; ++i) {
-            ASSERT(indices[i] < shape[i]);
+        unsigned int m = 1;
+        // std::cout << "Start calculating index with N = " << N << std::endl;
+        for (unsigned int i = N; i >= 1; --i) {
+            ASSERT(indices[i] <= shape[i], "indices[i] should less than shape[i]");
+            // if(indices[i] > shape[i]) {
+            //     std::cout << "indice[i] is " << indices[i] << " shape[i] is " << shape[i] << std::endl;
+            // }
             // TODO: 计算 index
+            index += indices[i-1] * m;
+            m *= shape[i-1];
         }
+        return index;
     }
+
+    // unsigned int data_index(unsigned int const indices[N]) const {
+    //     unsigned int index = 0;
+    //     unsigned int m = 1;
+    //     for (unsigned int i = N-1; i >=0; --i) {
+    //         // ASSERT(indices[i] < shape[i], "boundary should not exceed!\n");
+    //         // TODO: 计算 index
+	// 					// int w=1;
+	// 					// for(int j=i+1;j<N;j++) w *= shape[i];
+	// 					// index += w*indices[i];
+    //         std::cout << "i is " << i << std::endl;
+    //     }
+	// 			return index;
+    // }
 };
 
 // ---- 不要修改以下代码 ----
